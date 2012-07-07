@@ -10,10 +10,11 @@
 #include "md5.h"
 #include "StringProcessor.h"
 #include "HttpResponse.h"
+#include "PhraseManager.h"
 
 using namespace std;
 
-void startParsing(const string& content,WinRetriever wr,Domain domain){
+void startParsing(const string& content,WinRetriever wr,Domain domain,const vector<Phrase>& phraseList){
 	//Parse the response 
 	Parser parser(content,wr);
 	string text=parser.parseToPlainText();
@@ -33,12 +34,24 @@ void startParsing(const string& content,WinRetriever wr,Domain domain){
 		linkManager.addLink(link);
 		link=linkManager.getLink(wr.getUrl());
 
+		//Start to get phrases in the page
+		hash_map<string,int> phraseMap=parser.getPhrases(text,phraseList);
+		hash_map<string,int>::const_iterator phraseStart,phraseEnd;
+		phraseEnd=phraseMap.end();
+		LinkKeywordManager linkKeywordManager;
+		for(phraseStart=phraseMap.begin();phraseStart!=phraseEnd;phraseStart++){
+			LinkKeyword linkKeyword;
+			linkKeyword.setLinkId(link.getLinkId());
+			linkKeyword.setKeyword(phraseStart->first);
+			linkKeyword.setWeight(phraseStart->second);
+			linkKeywordManager.addLinkKeyword(linkKeyword);
+		}
+
 		//Start parse link keywords.
 		hash_map<string,int> hm=parser.getKeyWords(text);
 		hash_map<string,int>::const_iterator start,end;
 	
 		end=hm.end();
-		LinkKeywordManager linkKeywordManager;
 		for(start=hm.begin();start!=end;start++){
 			LinkKeyword linkKeyword;
 			linkKeyword.setLinkId(link.getLinkId());
@@ -59,7 +72,7 @@ void startParsing(const string& content,WinRetriever wr,Domain domain){
 	}
 }
 
-void startParsing(const string& content,WinRetriever wr,PendingLink pendingLink){
+void startParsing(const string& content,WinRetriever wr,PendingLink pendingLink,const vector<Phrase>& phraseList){
 	//Parse the response 
 	Parser parser(content,wr);
 	string text=parser.parseToPlainText();
@@ -79,12 +92,25 @@ void startParsing(const string& content,WinRetriever wr,PendingLink pendingLink)
 		linkManager.addLink(link);
 		link=linkManager.getLink(wr.getUrl());
 
+		//Start to get phrases in the page
+		hash_map<string,int> phraseMap=parser.getPhrases(text,phraseList);
+		hash_map<string,int>::const_iterator phraseStart,phraseEnd;
+		phraseEnd=phraseMap.end();
+		LinkKeywordManager linkKeywordManager;
+		for(phraseStart=phraseMap.begin();phraseStart!=phraseEnd;phraseStart++){
+			LinkKeyword linkKeyword;
+			linkKeyword.setLinkId(link.getLinkId());
+			linkKeyword.setKeyword(phraseStart->first);
+			linkKeyword.setWeight(phraseStart->second);
+			linkKeywordManager.addLinkKeyword(linkKeyword);
+		}
+
 		//Start parse link keywords.
 		hash_map<string,int> hm=parser.getKeyWords(text);
 		hash_map<string,int>::const_iterator start,end;
 	
 		end=hm.end();
-		LinkKeywordManager linkKeywordManager;
+		
 		for(start=hm.begin();start!=end;start++){
 			LinkKeyword linkKeyword;
 			linkKeyword.setLinkId(link.getLinkId());
@@ -105,24 +131,6 @@ void startParsing(const string& content,WinRetriever wr,PendingLink pendingLink)
 			}
 		}
 	}
-}
-
-void startIndexing(Domain domain,bool canLeaveDomain=true){
-	Logger::log("Start indexing "+domain.getUrl());
-	LinkManager linkManager;
-	
-	if(!linkManager.isExist(domain.getUrl())){
-		//Create retriever object to retrieve page content
-		WinRetriever wr(domain.getUrl());
-
-		wr.initialize();
-		wr.connect();
-		string response=wr.retrieve();
-		wr.close();
-
-		startParsing(response,wr,domain);
-	}
-	Logger::log("Finish indexing "+domain.getUrl());
 }
 
 bool isInBlackFileList(const string& url){
@@ -163,7 +171,49 @@ HttpResponse buildHttpResponse(string& str){
 	return response;
 }
 
-void startIndexing(PendingLink pendingLink,bool canLeaveDomain=true){
+void startIndexing(Domain domain,const vector<Phrase>& phraseList,bool canLeaveDomain=true){
+	Logger::log("Start indexing "+domain.getUrl());
+	LinkManager linkManager;
+	DomainManager domainManager;
+	if(!isInBlackFileList(domain.getUrl())){
+		if(!linkManager.isExist(domain.getUrl())){
+			//Create retriever object to retrieve page content
+			WinRetriever wr(domain.getUrl());
+			wr.initialize();
+			if(wr.getHost()=="localhost"){
+				wr.connect();
+				string response=wr.retrieve();
+				wr.close();
+
+				HttpResponse responseObj=buildHttpResponse(response);
+				if(responseObj.getReponseCode()=="200"){
+					string protocol=wr.getProtocol();
+					if(StringProcessor::trim(protocol).empty()){
+						protocol+="http";
+					}
+					string domainStr=protocol+"://"+wr.getHost();
+					int domainId=0;
+					if(!domainManager.isExist(domainStr)){
+						Domain domain;
+						domain.setUrl(domainStr);
+						domain.setStatus("allowed");
+						domainManager.addDomain(domain);
+					}
+					domainId=domainManager.getDomain(domainStr).getDomainId();
+					domain.setDomainId(domainId);
+					startParsing(responseObj.getSourceCode(),wr,domain,phraseList);
+				}else{
+					cout<<"HTTP response : "<<responseObj.getReponseCode()<<endl;
+				}
+			}else{
+				wr.close();
+			}
+		}
+	}
+	Logger::log("Finish indexing "+domain.getUrl());
+}
+
+void startIndexing(PendingLink pendingLink,const vector<Phrase>& phraseList,bool canLeaveDomain=true){
 	Logger::log("Start indexing "+pendingLink.getUrl());
 	
 	LinkManager linkManager;
@@ -194,7 +244,7 @@ void startIndexing(PendingLink pendingLink,bool canLeaveDomain=true){
 					}
 					domainId=domainManager.getDomain(domainStr).getDomainId();
 					pendingLink.setDomainId(domainId);
-					startParsing(response,wr,pendingLink);
+					startParsing(responseObj.getSourceCode(),wr,pendingLink,phraseList);
 				}else{
 					cout<<"HTTP response : "<<responseObj.getReponseCode()<<endl;
 				}
@@ -215,7 +265,11 @@ int main(){
 	if(!domainManager->isExist(domain.getUrl())){
 		domainManager->addDomain(domain);
 	}
-	startIndexing(domain,false);
+
+	PhraseManager phraseManager;
+	vector<Phrase> phraseList=phraseManager.getAllPhrases();
+
+	startIndexing(domain,phraseList,false);
 	/*
 	vector<Domain> domainList=domainManager->getAllowedDomains();
 	int size=domainList.size();
@@ -232,7 +286,7 @@ int main(){
 		}
 		for(int i=0;i<size;++i){
 			PendingLink pendingLink=pendingLinks.at(i);
-			startIndexing(pendingLink,false);
+			startIndexing(pendingLink,phraseList,false);
 			pendingLinkManager.deletePendingLink(pendingLink.getUrl());
 		}
 	}

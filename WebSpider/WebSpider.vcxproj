@@ -96,6 +96,8 @@
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="PendingLink.cpp" />
     <ClCompile Include="PendingLinkManager.cpp" />
+    <ClCompile Include="Phrase.cpp" />
+    <ClCompile Include="PhraseManager.cpp" />
     <ClCompile Include="Retriever.cpp" />
     <ClCompile Include="StringProcessor.cpp" />
     <ClCompile Include="WinRetriever.cpp" />
@@ -116,6 +118,8 @@
     <ClInclude Include="Parser.h" />
     <ClInclude Include="PendingLink.h" />
     <ClInclude Include="PendingLinkManager.h" />
+    <ClInclude Include="Phrase.h" />
+    <ClInclude Include="PhraseManager.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Retriever.h" />
     <ClInclude Include="StringProcessor.h" />

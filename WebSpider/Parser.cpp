@@ -3,6 +3,7 @@
 #include <sstream>
 #include "StringProcessor.h"
 #include "Parser.h"
+#include <algorithm>
 
 Parser::Parser(void){
 	initializeTagHash();
@@ -41,13 +42,11 @@ string& Parser::stripHTMLTags(string& s) {
 			if(rightPos != string::npos) {
 				inTag = false;
 				s.erase(leftPos, rightPos + 1);
-			}
-			else {
+			}else {
 				done = true;
 				s.erase();
 			}
-		}
-		else {
+		}else {
 			// Look for start of tag:
 			leftPos = s.find('<');
 			if(leftPos != string::npos) {
@@ -56,12 +55,12 @@ string& Parser::stripHTMLTags(string& s) {
 				if(rightPos == string::npos) {
 					inTag = done = true;
 					s.erase(leftPos);
-				}
-				else
+				}else{
 					s.erase(leftPos, rightPos - leftPos + 1);
-			}
-			else
+				}
+			}else{
 				done = true;
+			}
 		}
 	}
 
@@ -378,6 +377,47 @@ bool Parser::isInBlackList(const string& str){
 		}
 	}
 	return false;
+}
+
+/************************************************************************
+ * Method     : getPhrases()
+ * Descrition : Return phrases map in the contents
+ * Input      : str -- Page content  
+ *				phraseList -- The list of phrase to be matched	
+ *				weightage -- The weitage of a word
+ * Output     : Phrases, UPPER CASE format
+*************************************************************************/
+hash_map<string,int> Parser::getPhrases(string str,const vector<Phrase>& phraseList,int weightage){
+	int size=phraseList.size();
+	hash_map<string,int> phraseMap;
+	for(int i=0;i<size;++i){
+		Phrase phraseObj=phraseList.at(i);
+		string phrase=StringProcessor::toupper(phraseObj.getPhrase());
+		int phraseNumber=this->findPhraseNumber(StringProcessor::toupper(str),phrase);
+		if(phraseNumber){
+			phraseMap[phrase]=weightage*phraseNumber;
+		}
+	}
+	return phraseMap;
+}
+
+/************************************************************************
+ * Method     : findPhraseNumber()
+ * Descrition : Return number of occurences of the specified phrase in the
+ *				page
+ * Input      : str -- Page content  
+ *				phrase -- the phrase to be found
+ * Output     : phraseNumber -- number of occurences of the phrase
+*************************************************************************/
+int Parser::findPhraseNumber(const string& str,const string& phrase){
+	string::size_type pos(0);
+	int phraseNumber=0;
+	
+	while((pos=str.find(phrase,pos))!=string::npos){
+		++phraseNumber;
+		pos += phrase.size();
+	}
+	return phraseNumber;
 }
 
 Parser::~Parser(void){

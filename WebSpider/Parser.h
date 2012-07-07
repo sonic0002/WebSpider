@@ -11,6 +11,7 @@
 #include <hash_map>
 #include "WinRetriever.h"
 #include "PendingLink.h"
+#include "Phrase.h"
 
 using namespace std;
 using namespace stdext;
@@ -29,6 +30,7 @@ private:
 	string removeAll(string& str,const string& needle);
 	string replaceAll(string& str,const string& needle,const string& replacement);
 	bool isInBlackList(const string& str);
+	int findPhraseNumber(const string& str,const string& phrase);
 public:
 	Parser(void);
 	Parser(string h){setHtml(h);initializeTagHash();}
@@ -47,5 +49,6 @@ public:
 	string parseToPlainText();
 	vector<PendingLink> getLinks(string s);
 	hash_map<string,int> getKeyWords(string str,int weightage=1);
+	hash_map<string,int> getPhrases(string str,const vector<Phrase>& phraseList,int weightage=1);
 };
 
