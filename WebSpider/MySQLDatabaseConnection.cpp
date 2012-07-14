@@ -1,7 +1,10 @@
 #include "MySQLDatabaseConnection.h"
 #include <regex>
+using namespace std;
+using namespace sql;
 
 Driver* MySQLDatabaseConnection::driver=get_driver_instance();
+int MySQLDatabaseConnection::connCount=0;
 
 MySQLDatabaseConnection::MySQLDatabaseConnection(void)
 {
@@ -30,6 +33,8 @@ void MySQLDatabaseConnection::connect(){
 	}catch(SQLException &ex){
 		cout<<"Exception in connect() of "<<__FILE__<<endl;
 		cout<<"Error : "<<ex.what()<<endl;
+		this->close();
+		this->deleteConn();
 		throw;
 	}
 }
@@ -43,18 +48,27 @@ ResultSet* MySQLDatabaseConnection::select(const string& sql){
 	}catch(SQLException &ex){
 		cout<<"Exception in select() of "<<__FILE__;
 		cout<<"Error : "<<ex.what();
+		this->close();
+		this->deleteStmt();
+		this->deleteConn();
 		throw;
-		//return nullptr;
 	}
 }
 
 int MySQLDatabaseConnection::update(const string& sql){
 	try{
+		//Create a statement object
 		stmt=conn->createStatement();
-		return stmt->executeUpdate(sql);
+		int num=stmt->executeUpdate(sql);
+		this->deleteStmt();						//Here need to delete the stmt
+		return num;
+		//return stmt->executeUpdate(sql);
 	}catch(SQLException &ex){
 		cout<<"Exception in update() of "<<__FILE__;
 		cout<<"Error : "<<ex.what();
+		this->close();
+		this->deleteStmt();
+		this->deleteConn();
 		throw;
 		//return nullptr;
 	}
@@ -62,51 +76,58 @@ int MySQLDatabaseConnection::update(const string& sql){
 
 void MySQLDatabaseConnection::close(){
 	try{
-		stmt->close();
-		conn->close();
+		if(conn){
+			conn->close();
+		}
 	}catch(SQLException &ex){
 		cout<<"Exception in close() of "<<__FILE__;
 		cout<<"Error : "<<ex.what();
+		this->deleteStmt();
+		this->deleteConn();
 		throw;
 	}
 }
 
 string MySQLDatabaseConnection::escapeString(const string& str){
-    /*
-	using namespace std::tr1;
-	regex rg("\r|\n|\'");
-	string replacement(" ");
-	string plainText=regex_replace(str,rg,replacement);
-	return plainText;
-	*/
 	std::size_t n = str.length();
     std::string escaped;
     escaped.reserve(n * 2);        // pessimistic preallocation
 
     for (std::size_t i = 0; i < n; ++i) {
-        if (str[i] == '\\' || str[i] == '\'')
+        if (str[i] == '\\' || str[i] == '\''){
             escaped += '\\';
+		}
         escaped += str[i];
     }
     return escaped;
 }
 
-MySQLDatabaseConnection::~MySQLDatabaseConnection()
-{
+void MySQLDatabaseConnection::deleteStmt(){
 	if(stmt){
 		try{
 			delete stmt;
+			stmt=NULL;
 		}catch(SQLException &ex){
 			cout<<"Exception in close() of "<<__FILE__;
 			cout<<"Error : "<<ex.what();
 		}
 	}
+}
+
+void MySQLDatabaseConnection::deleteConn(){
 	if(conn){
 		try{
 			delete conn;
+			conn=NULL;
 		}catch(SQLException &ex){
-			cout<<"Exception in close() of "<<__FILE__;
+			cout<<"Exception in deleteConn() of "<<__FILE__;
 			cout<<"Error : "<<ex.what();
 		}
 	}
+}
+
+MySQLDatabaseConnection::~MySQLDatabaseConnection()
+{
+	this->deleteStmt();
+	this->deleteConn();
 }

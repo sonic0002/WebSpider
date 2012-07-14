@@ -5,7 +5,10 @@
  * Version     : v1.0
  * Description : Handle link keyword data, search, update, insert or delete
  ********************************************************************************/
+#ifndef LINK_KEYWORD_MANAGER_H
+#define LINK_KEYWORD_MANAGER_H
 #pragma once
+#include <string>
 #include "databasemanager.h"
 #include "LinkKeyword.h"
 
@@ -17,7 +20,10 @@ public:
 	~LinkKeywordManager(void);
 
 	void addLinkKeyword(LinkKeyword& linkKeyword);
-	LinkKeyword getLinkKeyword(int linkId,const string& keyword);
-	bool isExist(int linkId,const string& keyWord);
+	int updateLinkKeyword(LinkKeyword& linkKeyword);
+	LinkKeyword getLinkKeyword(int linkId,const std::string& keyword);
+	bool isExist(int linkId,const std::string& keyWord);
+	long deleteAll();
+	long deleteAll(int linkId);
 };
-
+#endif

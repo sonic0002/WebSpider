@@ -5,6 +5,8 @@
  * Version     : v1.0
  * Description : Link keyword entity
  ********************************************************************************/
+#ifndef LINK_KEYWORD_H
+#define LINK_KEYWORD_H
 #pragma once
 #include <string>
 
@@ -25,4 +27,4 @@ private:
 	std::string keyword;
 	int weight;
 };
-
+#endif

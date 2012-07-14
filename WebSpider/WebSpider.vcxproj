@@ -81,6 +81,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Configure.cpp" />
     <ClCompile Include="DatabaseConnection.cpp" />
     <ClCompile Include="DatabaseManager.cpp" />
     <ClCompile Include="Domain.cpp" />
@@ -100,9 +101,11 @@
     <ClCompile Include="PhraseManager.cpp" />
     <ClCompile Include="Retriever.cpp" />
     <ClCompile Include="StringProcessor.cpp" />
+    <ClCompile Include="URL.cpp" />
     <ClCompile Include="WinRetriever.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Configure.h" />
     <ClInclude Include="DatabaseConnection.h" />
     <ClInclude Include="DatabaseManager.h" />
     <ClInclude Include="Domain.h" />
@@ -123,6 +126,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Retriever.h" />
     <ClInclude Include="StringProcessor.h" />
+    <ClInclude Include="URL.h" />
     <ClInclude Include="WinRetriever.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 #include "WinRetriever.h"
 #include "StringProcessor.h"
+using namespace std;
 
 WinRetriever::WinRetriever(void)
 {

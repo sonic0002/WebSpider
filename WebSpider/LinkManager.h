@@ -5,7 +5,10 @@
  * Version     : v1.0
  * Description : Handle link data, search, update, insert or delete
  ********************************************************************************/
+#ifndef LINK_MANAGER_H
+#define LINK_MANAGER_H
 #pragma once
+#include <string>
 #include "databasemanager.h"
 #include "Link.h"
 
@@ -17,8 +20,11 @@ public:
 	~LinkManager(void);
 
 	void addLink(Link& link);
+	int updateLink(Link& link);
 	Link getLink(const int linkId);
-	Link getLink(const string& url);
-	bool isExist(const string& url);
+	Link getLink(const std::string& url);
+	bool isExist(const std::string& url);
+	long deleteAll();
+	bool isContentChanged(const std::string& url,const std::string& checksum);
 };
-
+#endif

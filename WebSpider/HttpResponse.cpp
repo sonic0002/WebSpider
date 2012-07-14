@@ -1,15 +1,12 @@
 #include "HttpResponse.h"
 
 
-HttpResponse::HttpResponse(void)
+HttpResponse::HttpResponse(void):contentType("")
 {
 }
 
 HttpResponse::HttpResponse(HttpResponse& response){
-	this->responseCode=response.responseCode;
-	this->responseHeader=response.responseHeader;
-	this->sourceCode=response.sourceCode;
-	this->sourceCodeLength=response.sourceCodeLength;
+	this->copyData(response);
 }
 
 HttpResponse HttpResponse::operator=(HttpResponse& response){
@@ -17,12 +14,17 @@ HttpResponse HttpResponse::operator=(HttpResponse& response){
 		return *this;
 	}
 
+	this->copyData(response);
+
+	return *this;
+}
+
+void HttpResponse::copyData(HttpResponse& response){
 	this->responseCode=response.responseCode;
 	this->responseHeader=response.responseHeader;
 	this->sourceCode=response.sourceCode;
 	this->sourceCodeLength=response.sourceCodeLength;
-
-	return *this;
+	this->contentType=response.getContentType();
 }
 
 HttpResponse::~HttpResponse(void)

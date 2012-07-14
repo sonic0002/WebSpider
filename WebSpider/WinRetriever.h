@@ -1,9 +1,20 @@
+/*****************************************************************************
+ * Class       : WinRetriever
+ * Author      : Pi Ke
+ * Date        : 2011-08-13
+ * Version     : v1.0
+ * Description : This class is a derived class. To define the network programming 
+ *				 functions such as connect,retrieve and close. They are using
+ *				 Windows specified network libraries
+ *****************************************************************************/
+#ifndef WIN_RETRIEVER_H
+#define WIN_RETRIEVER_H
 #pragma once
+#include <string>
 #include "retriever.h"
 #include <iostream>
 #include <WinSock2.h>
 #pragma comment(linker,"/defaultlib:ws2_32.lib")
-using namespace std;
 
 class WinRetriever :
 	public Retriever
@@ -12,10 +23,10 @@ private:
 	SOCKET s_socket;
 	SOCKADDR_IN socket_addr;
 protected:
-	string buildHttpRequest();
+	std::string buildHttpRequest();
 public:
 	WinRetriever(void);
-	WinRetriever(string url):Retriever(url){};
+	WinRetriever(std::string url):Retriever(url){};
 	~WinRetriever(void);
 
 	//Sets and gets
@@ -26,8 +37,8 @@ public:
 
 	int initialize();
 	int connect();
-	string retrieve();
+	std::string retrieve();
 	void close();
 };
-
+#endif
 

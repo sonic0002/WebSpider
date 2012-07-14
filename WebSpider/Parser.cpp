@@ -97,8 +97,8 @@ string Parser::stripHTMLTagsWithRegEx(string s){
 	regex rg("<.*?>");
 	string replacement(" ");
 
-	string str=replaceAll(s,"\r\n",replacement);
-	str=replaceAll(str,"\n",replacement);
+	//string str=replaceAll(s,"\r\n",replacement);
+	string str=replaceAll(s,"\n",replacement);
 	str=replaceAll(str,"\r",replacement);														//Remove all the line feeds
 	str=stripSpecifiedHTMLTagsWithRegEx(s,tagHash["script"]);						            //Call the replacement function
 	str=stripSpecifiedHTMLTagsWithRegEx(str,tagHash["style"]);
@@ -156,6 +156,7 @@ string Parser::getTitle(const string& str){
 		for(size_t i=1; i < what.size(); i++){
 			if(what[i]!=""){
 				title=StringProcessor::trim(what[i]);
+				break;
 			}
 		}
 		start = what[0].second;
@@ -185,6 +186,7 @@ string Parser::getDescription(const string& str){
 		for(size_t i=1; i < what.size(); i++){
 			if(what[i]!=""){
 				description=StringProcessor::trim(what[i]);
+				break;
 			}
 		}
 		start = what[0].second;
@@ -205,7 +207,7 @@ string Parser::parseToPlainText(){
 	regex rg("\r|\n|( +)|(&nbsp;)|,");
 	string replacement(" ");
 	string plainText=stripHTMLTagsWithRegEx(html);
-	plainText=regex_replace(plainText,rg,replacement);
+	//plainText=regex_replace(plainText,rg,replacement);
 	return plainText;
 }
 
@@ -227,7 +229,7 @@ vector<PendingLink> Parser::getLinks(string s){
 	regex rg("<a.*?href=(.*?) .*?>",std::tr1::regex_constants::icase);
 
 	while(regex_search(start,end,what,rg,flags)){			//This function is very important to match all <a href="">
-		for(size_t i=1; i < what.size(); i++){
+		for(size_t i=1; i < what.size(); ++i){		
 			if(what[i]!=""){
 				PendingLink link;
 				string href=StringProcessor::trim(what[i]);
@@ -248,10 +250,9 @@ vector<PendingLink> Parser::getLinks(string s){
 					}
 				}
 				
-				href=StringProcessor::trim(href);
-				if(!StringProcessor::beginWith(StringProcessor::tolower(href),"javascript:")&&!StringProcessor::beginWith(StringProcessor::tolower(href),"mailto:")){
+				href=StringProcessor::trim(href);	
+				if(!StringProcessor::beginWith(StringProcessor::tolower(href),"javascript:")&&!StringProcessor::beginWith(StringProcessor::tolower(href),"mailto:")){				
 					href=getAbsoluteURL(href);
-					cout<<href<<endl;
 					link.setUrl(href);
 					result_links.push_back(link);
 				}
@@ -294,34 +295,43 @@ string Parser::getAbsoluteURL(string url){
 		//Process the path
 		url=StringProcessor::trim(url);
 		string base=wr.getBase();
+
+		if(StringProcessor::endWith(base,"/")){
+			base=base.substr(0,base.length()-1);
+		}
+
+		//cout<<"Base : "<<base<<endl;
+		//cout<<"Url : "<<url<<endl;
 		int backCount=StringProcessor::substrCount(url,"../");              //Get number of ocuurences of ../ in url
 		int baseBackCount=StringProcessor::substrCount(base,"/");           //Get number of occurences of / in base of the URL
-		if(baseBackCount<backCount){
-			string::size_type pos(0);
-			while(pos!=string::npos){
-				pos=url.find("../");
-				if(pos!=string::npos){
+		//If url starts with /, then it means start from root directory
+		if(!StringProcessor::beginWith(url,"/")){
+			if(baseBackCount<backCount){
+				string::size_type pos(0);
+				while(pos!=string::npos){
+					pos=url.find("../");
+					if(pos!=string::npos){
+						url=url.erase(pos,3);
+					}
+				}
+			}else{
+				string::size_type pos(0);
+				string::size_type basePos(0);
+				while((pos=url.find("../"))!=string::npos){;	
 					url=url.erase(pos,3);
+
+					basePos=base.find_last_of("/");
+					if(basePos!=string::npos){
+						base=base.erase(basePos,base.length()-basePos);
+					}
 				}
+				if(!StringProcessor::beginWith(url,"/")){
+					url="/"+url;
+				}
+				url=base+url;
 			}
-		}else if(backCount!=0){
-			string::size_type pos(0);
-			string::size_type basePos(0);
-			while(pos!=string::npos){
-				pos=url.find("../");
-				if(pos!=string::npos){
-					url=url.erase(pos,3);
-				}
-				basePos=base.find_last_of("/");
-				if(basePos!=string::npos){
-					base=base.erase(basePos,base.length()-basePos);
-				}
-			}
-			url=base+url;
-		}else if(url.find("./")!=string::npos){
-			url=url.substr(url.find("./"+2));
 		}
-			
+
 		if(!StringProcessor::beginWith(url,"/")){
 			url="/"+url;
 		}
@@ -418,6 +428,110 @@ int Parser::findPhraseNumber(const string& str,const string& phrase){
 		pos += phrase.size();
 	}
 	return phraseNumber;
+}
+
+/************************************************************************
+ * Method     : calculateLinkLevel()
+ * Descrition : Calculate the link level. Link level means how far away a
+ *				link away from the root directory. 
+ * Input      : url --Link URL
+ * Output     : Link URL level
+*************************************************************************/
+int Parser::calculateLinkLevel(const string& url){
+	int linkLevel=1;
+	int phraseNumber=this->findPhraseNumber(url,"/");
+	if(phraseNumber>2){
+		linkLevel=phraseNumber-2;
+	}
+	return linkLevel;
+}
+
+
+/************************************************************************
+ * Method     : parseUrl()
+ * Descrition : Parse the given url and return an URL object which contains
+ *				protocol,host and port etc.
+ * Input      : url --Link URL
+ * Output     : URL object
+*************************************************************************/
+URL Parser::parseUrl(const string& url){
+	string u=StringProcessor::trim(url);								//Trim the URL,remove white spaces
+	string::size_type delim_pos=u.find("://");							//Find :// in the url
+	URL urlObj;
+
+	urlObj.setUrl(u);
+
+	//Get protocol
+	if(delim_pos!=string::npos){
+		urlObj.setProtocol(u.substr(0,delim_pos));						//Set the protocol
+	}
+
+	//Get host
+	string::size_type port_delim_pos=string::npos;;				//Port delimiter position
+	string::size_type path_delim_pos=string::npos;;				//Path delimiter position
+	if(delim_pos!=string::npos){			
+		port_delim_pos=u.find(':',delim_pos+1);
+		path_delim_pos=u.find('/',delim_pos+3);	
+		//If port is specified
+		if(port_delim_pos!=string::npos){
+			urlObj.setHost(u.substr(delim_pos+3,port_delim_pos-delim_pos-3));
+		}else{		//Port is not specified
+			if(path_delim_pos!=string::npos){	//path is specified
+				urlObj.setHost(u.substr(delim_pos+3,path_delim_pos-delim_pos-3));
+			}else{
+				urlObj.setHost(u.substr(delim_pos+3));
+			}
+		}
+	}else{	// ://notspecified
+		port_delim_pos=u.find(':');
+		path_delim_pos=u.find('/');	
+		//If port is specified
+		if(port_delim_pos!=string::npos){
+			urlObj.setHost(u.substr(0,port_delim_pos));
+		}else{		//Port is not specified
+			if(path_delim_pos!=string::npos){	//path is specified
+				urlObj.setHost(u.substr(0,path_delim_pos));
+			}else{
+				urlObj.setHost(u.substr(0,u.length()));
+			}
+		}
+	}
+
+	//Get port
+	if(port_delim_pos!=string::npos){
+		if(path_delim_pos!=string::npos){
+			urlObj.setPort(atoi(u.substr(port_delim_pos+1,path_delim_pos-port_delim_pos-1).c_str()));
+		}else{
+			urlObj.setPort(atoi(u.substr(port_delim_pos+1,u.length()-port_delim_pos-1).c_str()));
+		}
+	}
+
+	//Get path
+	string::size_type query_delim_pos=u.find_first_of('?');
+	if(path_delim_pos!=string::npos){
+		if(query_delim_pos!=string::npos){
+			urlObj.setPath(u.substr(path_delim_pos,query_delim_pos-path_delim_pos));
+		}else{
+			urlObj.setPath(u.substr(path_delim_pos,u.length()-path_delim_pos));
+		}
+	}
+
+	//Get base name
+	string::size_type filename_delim=urlObj.getPath().find_last_of("/");
+	if(filename_delim!=string::npos){
+		urlObj.setBase(urlObj.getPath().substr(0,filename_delim+1));
+	}
+
+	//Get filename
+	if(filename_delim!=string::npos){
+		urlObj.setFulename(urlObj.getPath().substr(filename_delim+1));
+	}
+
+	//Get query
+	if(query_delim_pos!=string::npos){
+		urlObj.setQuery(u.substr(query_delim_pos+1,u.length()-query_delim_pos-1));
+	}
+	return urlObj;
 }
 
 Parser::~Parser(void){

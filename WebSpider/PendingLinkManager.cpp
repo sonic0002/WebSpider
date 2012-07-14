@@ -1,6 +1,8 @@
 #include "PendingLinkManager.h"
 #include "MySQLDatabaseConnection.h"
 #include "StringProcessor.h"
+using namespace std;
+using namespace sql;
 
 PendingLinkManager::PendingLinkManager(void)
 {
@@ -16,7 +18,7 @@ void PendingLinkManager::addPendingLink(PendingLink& pendingLink){
 	MySQLDatabaseConnection* conn=new MySQLDatabaseConnection(this->hostname,this->username,this->password,this->database);
 	conn->connect();
 
-	string sql="INSERT INTO link_pending (url,domain_id) VALUES ('"+conn->escapeString(pendingLink.getUrl())+"',"+StringProcessor::intToString(pendingLink.getDomainId())+")";
+	string sql="INSERT INTO link_pending (url,domain_id,level) VALUES ('"+conn->escapeString(pendingLink.getUrl())+"',"+StringProcessor::intToString(pendingLink.getDomainId())+","+StringProcessor::intToString(pendingLink.getLevel())+")";
 	int ret=conn->update(sql);
 	conn->close();
 	delete conn;
@@ -40,6 +42,7 @@ bool PendingLinkManager::isExist(const string& url){
 		exist=true;
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return exist;
 }
@@ -62,9 +65,11 @@ vector<PendingLink> PendingLinkManager::getAllPendingLink(){
 		PendingLink pendingLink;
 		pendingLink.setDomainId(rs->getInt("domain_id"));
 		pendingLink.setUrl(rs->getString("url"));
+		pendingLink.setLevel(rs->getInt("level"));
 		pendingLinks.push_back(pendingLink);
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return pendingLinks;
 }
@@ -83,6 +88,23 @@ void PendingLinkManager::deletePendingLink(const string& url){
 	int ret=conn->update(sql);
 	conn->close();
 	delete conn;
+}
+
+/************************************************************************
+ * Method     : deleteAll()
+ * Descrition : Delete all pending links from the database
+ * Input      : void
+ * Output     : Number of links deleted
+*************************************************************************/
+long PendingLinkManager::deleteAll(){
+	MySQLDatabaseConnection* conn=new MySQLDatabaseConnection(this->hostname,this->username,this->password,this->database);
+	conn->connect();
+
+	string sql="DELETE FROM link_pending";
+	long num=conn->update(sql);
+	conn->close();
+	delete conn;
+	return num;
 }
 
 PendingLinkManager::~PendingLinkManager(void)

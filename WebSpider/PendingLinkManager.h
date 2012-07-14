@@ -5,8 +5,11 @@
  * Version     : v1.0
  * Description : Handle pending link data, search, update, insert or delete
  ********************************************************************************/
+#ifndef PENDING_LINK_MANAGER_H
+#define PENDING_LINK_MANAGER_H
 #pragma once
 #include <vector>
+#include <string>
 #include "databasemanager.h"
 #include "PendingLink.h"
 
@@ -18,9 +21,10 @@ public:
 	~PendingLinkManager(void);
 
 	void addPendingLink(PendingLink& pendingLink);
-	bool isExist(const string& url);
+	bool isExist(const std::string& url);
 	//PendingLink getPendingLink(const string& url);
-	vector<PendingLink> getAllPendingLink();
-	void deletePendingLink(const string& url);
+	std::vector<PendingLink> getAllPendingLink();
+	void deletePendingLink(const std::string& url);
+	long deleteAll();
 };
-
+#endif

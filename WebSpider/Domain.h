@@ -5,6 +5,8 @@
  * Version     : v1.0
  * Description : Domain entity
  ********************************************************************************/
+#ifndef DOMAIN_H
+#define DOMAIN_H
 #pragma once
 #include <string>
 
@@ -25,4 +27,4 @@ private:
 	std::string url;
 	std::string status;
 };
-
+#endif

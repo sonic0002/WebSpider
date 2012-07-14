@@ -1,5 +1,7 @@
 #include "DomainManager.h"
 #include "MySQLDatabaseConnection.h"
+using namespace std;
+using namespace sql;
 
 DomainManager::DomainManager(void)
 {
@@ -27,6 +29,7 @@ vector<Domain> DomainManager::getAllDomains(){
 		domains.push_back(domain);
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return domains;
 }
@@ -53,6 +56,7 @@ vector<Domain> DomainManager::getAllowedDomains(){
 		domains.push_back(domain);
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return domains;
 }
@@ -79,6 +83,7 @@ vector<Domain> DomainManager::getBlockedDomains(){
 		domains.push_back(domain);
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return domains;
 }
@@ -104,6 +109,7 @@ Domain DomainManager::getDomain(const string& url){
 			domain.setStatus(rs->getString("status"));
 		}
 		conn->close();
+		delete rs;
 		delete conn;
 	}
 	return domain;
@@ -143,6 +149,7 @@ bool DomainManager::isExist(const string& url){
 		exist=true;
 	}
 	conn->close();
+	delete rs;
 	delete conn;
 	return exist;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Retriever.h"
 #include "StringProcessor.h"
+using namespace std;
 
 Retriever::Retriever(void)
 {
